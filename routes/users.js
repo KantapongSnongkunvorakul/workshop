@@ -83,13 +83,13 @@ router.post('/login', async function (req, res, next) {
         const user = await User.findOne({ name });
 
         if (!user) {
-            return res.status(401).send('Authentication failed: User not found');
+            return res.status(401).send('Authentication failed: User not found or Incorrect password');
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
-            return res.status(401).send('Authentication failed: Incorrect password');
+            return res.status(401).send('Authentication failed: User not found or Incorrect password');
         }
 
         const token = jwt.sign(

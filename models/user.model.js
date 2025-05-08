@@ -24,6 +24,11 @@ const userSchema = new mongoose.Schema({
     imageFilename: {
         type: String
     },
+    isApproved: {
+        type: Boolean,
+        required: true,
+        default: false  
+    }
 }, {
     timestamps: true
 });

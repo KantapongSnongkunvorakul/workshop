@@ -47,7 +47,8 @@ router.post('/register', upload.single('image'), async function (req, res, next)
             age,
             password: hashedPassword,
             imageFilename: req.file ? req.file.filename : null,
-            role: 'User'
+            role: 'User',
+            isApproved: false
         });
 
         await user.save();
@@ -86,6 +87,10 @@ router.post('/login', async function (req, res, next) {
             return res.status(401).send('Authentication failed: User not found or Incorrect password');
         }
 
+        if (!user.isApproved) {
+            return res.status(401).json({ message: 'Authentication failed: Account not approved yet.' });
+        }
+        
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
@@ -200,6 +205,42 @@ router.put('/:id', tokenMiddleware, upload.single('image'), async function (req,
         console.error("Error updating user:", error);
         if (req.file && req.file.path) fs.unlinkSync(req.file.path);
         res.status(500).send(error.message || 'Error updating user');
+    }
+});
+
+// PUT /users/approve/:id (Approve user)
+router.put('/:id/approve', tokenMiddleware, async function(req, res, next) {
+    try {
+        const userId = req.params.id; // ID ของผู้ใช้ที่ต้องการอนุมัติ
+        const loggedInUser = req.user; // ข้อมูลผู้ใช้ที่ Login จาก Token (ได้มาจาก tokenMiddleware)
+    
+        if (!userId) {
+        return res.status(400).json({ message: "User ID is required for approval" });
+        }
+    
+            if (loggedInUser.role !== 'Admin') {
+                return res.status(403).json({ message: "Forbidden: Only Admin can approve users" });
+            }
+    
+
+        const user = await User.findByIdAndUpdate(userId, { isApproved: true }, { new: true }).select('-password');
+    
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+    
+        if (user.isApproved) {
+            res.json({ message: `User ${user.name} approved successfully`, user: user.toJSON() });
+        } 
+
+        else {
+            console.error(`Failed to set isApproved to true for user ${userId}`);
+            res.status(500).json({ message: "Failed to approve user" });
+        }
+    
+    } catch (error) {
+        console.error("Error approving user:", error);
+        res.status(500).send(error.message || 'Error approving user');
     }
 });
 

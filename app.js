@@ -3,12 +3,14 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-var cors = require('cors') //
-require('dotenv').config() //
-require('./db.js') //
+var cors = require('cors') // เพิ่ม cors
+require('dotenv').config() // เพิ่ม dotenv
+require('./db.js') //เพิ่มการเชื่อมต่อฐานข้อมูล
 
 //process.env.DB_HOST
 
+//route
+// var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var productsRouter = require('./routes/products');
 var ordersRouter = require('./routes/orders');

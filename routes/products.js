@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var Product = require('../models/product.model');
+var Order = require('../models/order.model');
 var tokenMiddleware = require('../middleware/token.middleware'); 
 var multer = require('multer'); 
 var fs = require('fs'); // สำหรับลบไฟล์
@@ -159,5 +160,51 @@ router.delete('/:id', tokenMiddleware, isAdmin, async function(req, res, next) {
     }
 });
 
+/* GET /api/v1/products/:id/orders (ดึงรายการคำสั่งซื้อที่มีสินค้านี้) */
+router.get('/:id/orders', tokenMiddleware, isAdmin, async function(req, res, next) {
+    try {
+        const productId = req.params.id;
+
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+
+        const ordersWithProduct = await Order.find({
+            'items': {
+                $elemMatch: {
+                    product: productId
+                }
+            }
+        })
+        .populate('user', 'name') 
+        
+        .lean(); 
+        
+        const processedOrders = ordersWithProduct.map(order => {
+            
+            const filteredItems = order.items.filter(item =>
+                item.product.toString() === productId.toString() 
+            );
+
+           
+            const processedOrder = {
+                ...order, 
+                items: filteredItems
+            };
+
+            delete processedOrder.__v;
+
+            return processedOrder;
+        });
+
+
+        res.json(processedOrders);
+
+    } catch (error) {
+        console.error(`Error fetching orders for product ${req.params.id}:`, error);
+        res.status(500).json({ message: "Error fetching orders for product", error: error.message });
+    }
+});
 
 module.exports = router;
